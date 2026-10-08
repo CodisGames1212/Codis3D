@@ -29,7 +29,7 @@ This is **not a complete Blender clone**. There is no vertex/edge/face selection
 
 ## Builds
 
-`.github/workflows/build.yml` imports and tests the project, then exports Windows, Linux, macOS, Web, and a debug-signed Android APK. Android has arm64 and x86_64 targets. Artifacts are unsigned desktop builds and a development APK, not store-ready packages. Upload these files to https://github.com/CodisGames1212/Codis3D to run Actions. This local folder was not a Git checkout and no remote push or Actions run has been performed.
+`.github/workflows/build.yml` imports and tests the project, then exports Windows, Linux, macOS, Web, and a debug-signed Android APK. Android has arm64 and x86_64 targets. Artifacts are desktop development builds and a development APK, not store-ready packages. The project and workflow are published at https://github.com/CodisGames1212/Codis3D. Download platform packages from the Artifacts section of a successful run at https://github.com/CodisGames1212/Codis3D/actions. Pushes and manual workflow dispatches start builds; CI uses Godot 4.4.1.
 
 iOS has an export preset but requires a macOS machine, Xcode, an Apple development team and signing setup. iOS CI/store release is not configured. Platform compatibility is a target, not a verified claim; physical-device testing remains necessary. Web files must be served over HTTP.
 
