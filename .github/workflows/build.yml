@@ -34,6 +34,8 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         if: matrix.target == 'Android'
+        with:
+          packages: 'platform-tools'
       - name: Configure Android
         if: matrix.target == 'Android'
         shell: bash
