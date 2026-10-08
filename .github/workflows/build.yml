@@ -1,0 +1,67 @@
+name: Build Codis3D
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  GODOT_VERSION: 4.4.1
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [Windows, Linux, macOS, Web, Android]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and export templates
+        shell: bash
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot* /usr/local/bin/godot
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -O /tmp/templates.zip
+          unzip -q /tmp/templates.zip -d /tmp/templates
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp -r /tmp/templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+      - uses: actions/setup-java@v4
+        if: matrix.target == 'Android'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        if: matrix.target == 'Android'
+      - name: Configure Android
+        if: matrix.target == 'Android'
+        shell: bash
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
+          mkdir -p "$HOME/.config/godot"
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_HOME" "$JAVA_HOME" > "$HOME/.config/godot/editor_settings-4.4.tres"
+          keytool -genkeypair -keystore /tmp/debug.keystore -storepass android -keypass android -alias androiddebugkey -dname 'CN=Android Debug' -keyalg RSA -validity 10000
+      - name: Import and test
+        run: |
+          godot --headless --editor --path . --quit
+          timeout 60s godot --headless --path . --script tests/workspace_test.gd
+          timeout 60s godot --headless --path . --script tests/export_test.gd
+      - name: Export
+        env:
+          TARGET: ${{ matrix.target }}
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /tmp/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p build/{windows,linux,macos,web,android}
+          if [ "$TARGET" = Android ]; then
+            godot --headless --path . --export-debug "$TARGET"
+          else
+            godot --headless --path . --export-release "$TARGET"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Codis3D-${{ matrix.target }}
+          path: build/
+          if-no-files-found: error
